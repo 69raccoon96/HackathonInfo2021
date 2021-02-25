@@ -86,13 +86,14 @@ async def make_app():
     async def close_mongo():
         db.client.close()
     app.on_cleanup.append(close_mongo)
-
     app.user_repo = MongoUserRepository(db)
     policy = SessionIdentityPolicy()
     setup_security(app, policy, DBAuthorizationPolicy(app.user_repo))
     auth_handlers = Auth()
     auth_handlers.configure(app)
     app.add_routes(routes)
+    for r in app.router:
+        cors.add(r)
     return app
 
 port = os.getenv('PORT', 8080)
