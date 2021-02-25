@@ -78,61 +78,72 @@ async def courseinfo(request):
     course_data['id'] = str(course_data.pop('_id'))
     return web.Response(text=json.dumps(course_data, ensure_ascii=False))
 
+def clean_up(courses):
+    result = []
+    for cuorse in courses:
+        if cuorse not in result:
+            result.append(cuorse)
+    result2 = []
+    for elem in result:
+        if type(elem) != type("aaa"):
+            for elem2 in elem:
+                result2.append(elem2)
+        else:
+            result2.append(elem)
+    return result2
+
+
 @routes.get('/courseschoose')
 async def courseschoose(request):
     user_percents = await get_percents(request)
     #await check_authorized(request)
     course_data = list(mydb["subjects"].find({}))
-    result = {}
-    for i in range(1, 9):
-        for course in course_data:
-            if i in course['semesters']:
-                if i in result.keys():
-                    temp = dict(course)
-                    temp.pop('semesters')
-                    #temp.pop('_id')
-                    result[i].append(temp)
-                else:
-                    result[i] = []
-                    temp = dict(course)
-                    temp.pop('semesters')
-                    #temp.pop('_id')
-                    result[i].append(temp)
     max = -1
-    res = []
+    available_directions = []
     for elem in user_percents:
         if elem['percent'] > max:
             max = elem['percent']
     for elem in user_percents:
         if elem['percent'] == max:
-            res.append(elem)
+            available_directions.append(elem['id'])
     colors = {}
     request_data = dict(request.query)
     user_id = request_data['id']
     user_data = mydb["users"].find_one({"_id": ObjectId(user_id)})
-    good_courses = []
-    for elem in course_data:
-        for elem2 in res:
-            if elem['name'] in elem2['hard'] and elem not in good_courses and elem['name'] not in user_data['hard']:
-                good_courses.append(elem)
-    for course in good_courses:
-        course['id'] = str(course.pop('_id'))
-    colors['good'] = good_courses
-    normal_courses = []
-    courses_data = list(mydb["courses"].find({}))
+    learned_courses = user_data['hard'] + user_data['soft']
     bad_courses = []
-    for elem in res:
-        for elem2 in courses_data:
-            if elem['id'] == str(elem2['_id']):
-                bad_courses += elem2['bad']
-    bad_courses = list(set(bad_courses))
-    good_bad_courses = [x['name'] for x in good_courses] + bad_courses
-    for course in course_data:
-        if course['name'] not in good_bad_courses:
-            course['id'] = str(course.pop('_id'))
-            normal_courses.append(course)
+    good_courses_names = []
+    for id in available_directions:
+        bad_courses += mydb["courses"].find_one({"_id": ObjectId(id)})['bad']
+        good_courses_names += mydb["courses"].find_one({"_id": ObjectId(id)})['hard'] + mydb["courses"].find_one({"_id": ObjectId(id)})['soft']
+    bad_courses = clean_up(bad_courses)
+    good_courses_names = clean_up(good_courses_names)
+    normal_courses = []
+    for subject in course_data:
+        if subject['name'] not in good_courses_names and subject['name'] not in bad_courses:
+            subject['id'] = str(subject.pop('_id'))
+            normal_courses.append(subject)
+    not_learned_coursed = []
+    for course in good_courses_names:
+        if course not in learned_courses:
+
+            not_learned_coursed.append(course)
+    good = []
+    for gc in not_learned_coursed:
+        for course in course_data:
+            if gc == course['name']:
+                course['id'] = str(course.pop('_id'))
+                good.append(course)
+    colors['good'] = good
     colors['normal'] = normal_courses
+    #print(bad_courses)
+    #print(good_courses_names)
+    #print([x['name'] for x in normal_courses])
+    #print(not_learned_coursed)
+    print(colors)
     return web.Response(text=json.dumps(colors, ensure_ascii=False))
+
+
 
 async def init_mongo(loop):
     url = "mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
