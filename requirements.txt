@@ -1,0 +1,9 @@
+motor~=2.3.1
+aiohttp~=3.7.3
+pip~=20.3.3
+cryptography~=3.4.6
+setuptools~=51.0.0
+pymongo~=3.11.3
+aiohttp_security
+aiohttp_session
+aiohttp_security
