@@ -1,5 +1,6 @@
 import os
 
+import aiohttp_cors
 import pymongo
 from bson.objectid import ObjectId
 import asyncio
@@ -78,6 +79,9 @@ async def make_app():
     middleware = session_middleware(MongoStorage(session_collection, max_age=max_age))
 
     app = web.Application(middlewares=[middleware])
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(),
+    })
 
     async def close_mongo():
         db.client.close()
