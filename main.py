@@ -1,9 +1,5 @@
-import requests
-from aiohttp import web
 import pymongo
-from pymongo import MongoClient
 from bson.objectid import ObjectId
-import json
 import asyncio
 
 import motor.motor_asyncio as aiomotor
@@ -30,7 +26,7 @@ mycol = mydb["users"]
 #x = mycol.insert_one(mydict)
 
 @routes.get('/percents')
-async def procents(request):
+async def percents(request):
     request_data = dict(request.query)
     user_id = request_data['id']
     user_info = mycol.find_one({"_id": ObjectId(user_id)})
@@ -40,13 +36,17 @@ async def procents(request):
     procents_dict = {}
     for elem in courses:
         course_hard = elem['hard']
+        course_soft = elem['soft']
         dif = sum(1 for v in user_hard if v in course_hard)
-        procents_dict[elem['name']] = round(dif / len(course_hard) * 100)
+        dif2 = sum(1 for v in user_soft if v in course_hard)
+        procents_dict[elem['name']] = round((dif + dif2) / (len(course_hard) + len(course_soft)) * 100)
     result = []
     for elem in courses:
-        dictionary = {'_id': elem['_id'], 'name': elem['name'], 'procent': procents_dict[elem['name']]}
+        dictionary = {'_id': elem['_id'], 'name': elem['name'], 'percent': procents_dict[elem['name']]}
         result.append(dictionary)
     return web.Response(text=str(result))
+
+
 
 async def init_mongo(loop):
     url = "mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
