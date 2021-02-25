@@ -46,7 +46,12 @@ async def percents(request):
         result.append(dictionary)
     return web.Response(text=str(result))
 
-
+@routes.get('/courseinfo')
+async def courseinfo(request):
+    request_data = dict(request.query)
+    course_id = request_data['id']
+    course_data = mydb["courses"].find_one({"_id": ObjectId(course_id)})
+    return web.Response(text=str(course_data))
 
 async def init_mongo(loop):
     url = "mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
