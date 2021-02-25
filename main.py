@@ -62,15 +62,30 @@ async def get_percents(request):
 async def profile(request):
     #await check_authorized(request)
     request_data = dict(request.query)
-
+    course_data = list(mydb["subjects"].find({}))
     user_id = request_data['id']
     user_data = mydb["users"].find_one({"_id": ObjectId(user_id)})
+    soft = []
+    hard = []
+    for element in user_data['soft']:
+        for course in course_data:
+            if element == course['name']:
+                a = dict(course)
+                a['id'] = str(a.pop('_id'))
+                soft.append(a)
+    for element in user_data['hard']:
+        for course in course_data:
+            if element == course['name']:
+                a = dict(course)
+                a['id'] = str(a.pop('_id'))
+                hard.append(a)
     result = {}
-    result['hard'] = user_data['hard']
-    result['soft'] = user_data['soft']
+    result['hard'] = hard
+    result['soft'] = soft
     result['name'] = user_data['name']
     result['surname'] = user_data['surname']
     result['group'] = user_data['group']
+
     return web.Response(text=json.dumps(result, ensure_ascii=False))
 
 @routes.get('/courseinfo')
