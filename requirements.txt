@@ -1,0 +1,11 @@
+motor
+aiohttp
+pip
+cryptography
+setuptools
+pymongo
+aiohttp_security
+aiohttp_session
+aiohttp_session_mongo
+dnspython
+aiohttp_cors
