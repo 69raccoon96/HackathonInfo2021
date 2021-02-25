@@ -86,9 +86,7 @@ async def make_app():
     app.add_routes(routes)
     return app
 
-port = 8080
-if 'PORT' in os.environ:
-    port = int(os.environ.get('PORT'))
-web.run_app(make_app(), port=8080)
+port = os.getenv('PORT', 8080)
+web.run_app(make_app(), port=port)
 
 
