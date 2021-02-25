@@ -1,3 +1,5 @@
+import os
+
 import pymongo
 from bson.objectid import ObjectId
 import asyncio
@@ -83,6 +85,10 @@ async def make_app():
     auth_handlers.configure(app)
     app.add_routes(routes)
     return app
-web.run_app(make_app())
+
+port = 8080
+if 'PORT' in os.environ:
+    port = int(os.environ.get('PORT'))
+web.run_app(make_app(), port=8080)
 
 
