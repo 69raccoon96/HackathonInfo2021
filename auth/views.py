@@ -20,6 +20,7 @@ class Auth(object):
             user = await user_repo.get_user_by_username(username)
             user_dto = vars(user)
             user_dto.pop('password', None)
+            user_dto['id'] = user_dto.pop('_id')
             response = web.Response(text=json.dumps(user_dto))
             await remember(request, response, username)
             return response
