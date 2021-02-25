@@ -21,7 +21,7 @@ class Auth(object):
             user_dto = vars(user)
             user_dto.pop('password', None)
             user_dto['id'] = user_dto.pop('_id')
-            response = web.Response(text=json.dumps(user_dto))
+            response = web.Response(text=json.dumps(user_dto, ensure_ascii=False))
             await remember(request, response, username)
             return response
         else:

@@ -35,7 +35,7 @@ mycol = mydb["users"]
 async def percents(request):
     #await check_authorized(request)
     result = await get_percents(request)
-    return web.Response(text=json.dumps(result))
+    return web.Response(text=json.dumps(result, ensure_ascii=False))
 
 async def get_percents(request):
     request_data = dict(request.query)
@@ -53,7 +53,7 @@ async def get_percents(request):
         procents_dict[elem['name']] = round((dif + dif2) / (len(course_hard) + len(course_soft)) * 100)
     result = []
     for elem in courses:
-        dictionary = {'id': str(elem['_id']), 'name': elem['name'], 'percent': procents_dict[elem['name']]}
+        dictionary = {'id': str(elem['_id']), 'name': elem['name'], 'percent': procents_dict[elem['name']], "hard": elem["hard"], "soft": elem["soft"]}
         result.append(dictionary)
     return result
 
@@ -71,7 +71,7 @@ async def profile(request):
     result['name'] = user_data['name']
     result['surname'] = user_data['surname']
     result['group'] = user_data['group']
-    return web.Response(text=json.dumps(result))
+    return web.Response(text=json.dumps(result, ensure_ascii=False))
 
 @routes.get('/courseinfo')
 async def courseinfo(request):
@@ -80,31 +80,74 @@ async def courseinfo(request):
     course_id = request_data['id']
     course_data = mydb["courses"].find_one({"_id": ObjectId(course_id)})
     course_data['id'] = str(course_data.pop('_id'))
-    return web.Response(text=json.dumps(course_data))
+    return web.Response(text=json.dumps(course_data, ensure_ascii=False))
+
+def clean_up(courses):
+    result = []
+    for cuorse in courses:
+        if cuorse not in result:
+            result.append(cuorse)
+    result2 = []
+    for elem in result:
+        if type(elem) != type("aaa"):
+            for elem2 in elem:
+                result2.append(elem2)
+        else:
+            result2.append(elem)
+    return result2
+
 
 @routes.get('/courseschoose')
 async def courseschoose(request):
     user_percents = await get_percents(request)
     #await check_authorized(request)
     course_data = list(mydb["subjects"].find({}))
-    result = {}
-    for i in range(1, 9):
+    max = -1
+    available_directions = []
+    for elem in user_percents:
+        if elem['percent'] > max:
+            max = elem['percent']
+    for elem in user_percents:
+        if elem['percent'] == max:
+            available_directions.append(elem['id'])
+    colors = {}
+    request_data = dict(request.query)
+    user_id = request_data['id']
+    user_data = mydb["users"].find_one({"_id": ObjectId(user_id)})
+    learned_courses = user_data['hard'] + user_data['soft']
+    bad_courses = []
+    good_courses_names = []
+    for id in available_directions:
+        bad_courses += mydb["courses"].find_one({"_id": ObjectId(id)})['bad']
+        good_courses_names += mydb["courses"].find_one({"_id": ObjectId(id)})['hard'] + mydb["courses"].find_one({"_id": ObjectId(id)})['soft']
+    bad_courses = clean_up(bad_courses)
+    good_courses_names = clean_up(good_courses_names)
+    normal_courses = []
+    for subject in course_data:
+        if subject['name'] not in good_courses_names and subject['name'] not in bad_courses:
+            subject['id'] = str(subject.pop('_id'))
+            normal_courses.append(subject)
+    not_learned_coursed = []
+    for course in good_courses_names:
+        if course not in learned_courses:
+
+            not_learned_coursed.append(course)
+    good = []
+    for gc in not_learned_coursed:
         for course in course_data:
-            if i in course['semesters']:
-                if i in result.keys():
-                    temp = dict(course)
-                    temp.pop('semesters')
-                    #temp.pop('_id')
-                    result[i].append(temp)
-                else:
-                    result[i] = []
-                    temp = dict(course)
-                    temp.pop('semesters')
-                    #temp.pop('_id')
-                    result[i].append(temp)
-    sorted_list = sorted(user_percents, key=lambda course: course['percent'])
-    print(sorted_list)
-    return web.Response(text=json.dumps(sorted_list))
+            if gc == course['name']:
+                course['id'] = str(course.pop('_id'))
+                good.append(course)
+    colors['good'] = good
+    colors['normal'] = normal_courses
+    #print(bad_courses)
+    #print(good_courses_names)
+    #print([x['name'] for x in normal_courses])
+    #print(not_learned_coursed)
+    print(colors)
+    return web.Response(text=json.dumps(colors, ensure_ascii=False))
+
+
 
 async def init_mongo(loop):
     url = "mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
