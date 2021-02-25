@@ -144,6 +144,7 @@ async def courseschoose(request):
                     good.append(course)
     colors['good'] = good
     colors['normal'] = normal_courses
+    colors['semester'] = user_semester
     #print(bad_courses)
     #print(good_courses_names)
     #print([x['name'] for x in normal_courses])
