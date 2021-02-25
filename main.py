@@ -114,6 +114,8 @@ async def courseschoose(request):
     request_data = dict(request.query)
     user_id = request_data['id']
     user_data = mydb["users"].find_one({"_id": ObjectId(user_id)})
+    print(user_data)
+    user_semester: int = int(user_data['semester'])
     learned_courses = user_data['hard'] + user_data['soft']
     bad_courses = []
     good_courses_names = []
@@ -126,7 +128,8 @@ async def courseschoose(request):
     for subject in course_data:
         if subject['name'] not in good_courses_names and subject['name'] not in bad_courses:
             subject['id'] = str(subject.pop('_id'))
-            normal_courses.append(subject)
+            if user_semester < sorted(subject['semesters'])[-1]:
+                normal_courses.append(subject)
     not_learned_coursed = []
     for course in good_courses_names:
         if course not in learned_courses:
@@ -136,8 +139,9 @@ async def courseschoose(request):
     for gc in not_learned_coursed:
         for course in course_data:
             if gc == course['name']:
-                course['id'] = str(course.pop('_id'))
-                good.append(course)
+                if user_semester < sorted(course['semesters'])[-1]:
+                    course['id'] = str(course.pop('_id'))
+                    good.append(course)
     colors['good'] = good
     colors['normal'] = normal_courses
     #print(bad_courses)
