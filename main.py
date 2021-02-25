@@ -2,6 +2,7 @@ import os
 
 import aiohttp_cors
 import pymongo
+from aiohttp.web_urldispatcher import StaticResource
 from bson.objectid import ObjectId
 import asyncio
 
@@ -27,6 +28,7 @@ mycol = mydb["users"]
 #mydict = { "name": "John", "address": "Highway 37" }
 #myCursor = mycol.find({"name":"Ivan"})
 #x = mycol.insert_one(mydict)
+
 
 @routes.get('/percents')
 async def percents(request):
@@ -80,7 +82,10 @@ async def make_app():
 
     app = web.Application(middlewares=[middleware])
     cors = aiohttp_cors.setup(app, defaults={
-        "*": aiohttp_cors.ResourceOptions(),
+        "*": aiohttp_cors.ResourceOptions(
+            allow_credentials=True,
+            expose_headers="*",
+            allow_headers="*",),
     })
 
     async def close_mongo():
@@ -92,11 +97,14 @@ async def make_app():
     auth_handlers = Auth()
     auth_handlers.configure(app)
     app.add_routes(routes)
-    for r in app.router:
-        cors.add(r)
+    for route in list(app.router.routes()):
+        if not isinstance(route.resource, StaticResource):
+            print(route)
+            cors.add(route)
+
     return app
 
-port = os.getenv('PORT', 8080)
+port = os.getenv('PORT', 8081)
 web.run_app(make_app(), port=port)
 
 

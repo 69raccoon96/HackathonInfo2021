@@ -3,17 +3,17 @@ from abc import ABCMeta, abstractmethod
 import motor
 
 class User:
-    def __init__(self, _id, email, username, password, status, name, surname, group, hard, soft):
-        self._id = str(_id)
-        self.email = email
-        self.username = username
-        self.password = password
-        self.status = status
-        self.name = name
-        self.surname = surname
-        self.group = group
-        self.hard = hard
-        self.soft = soft
+    def __init__(self, **kwargs):
+        self._id = str(kwargs["_id"])
+        self.email = kwargs["email"]
+        self.username = kwargs["username"]
+        self.password = kwargs["password"]
+        self.status = kwargs["status"]
+        self.name = kwargs["name"]
+        self.surname = kwargs["surname"]
+        self.group = kwargs["group"]
+        self.hard = kwargs["hard"]
+        self.soft = kwargs["soft"]
 
 
 class AbstractUserRepository(metaclass=ABCMeta):
