@@ -31,7 +31,7 @@ mycol = mydb["users"]
 async def percents(request):
     #await check_authorized(request)
     result = await get_percents(request)
-    return web.Response(text=json.dumps(result))
+    return web.Response(text=json.dumps(result, ensure_ascii=False))
 
 async def get_percents(request):
     request_data = dict(request.query)
@@ -49,7 +49,7 @@ async def get_percents(request):
         procents_dict[elem['name']] = round((dif + dif2) / (len(course_hard) + len(course_soft)) * 100)
     result = []
     for elem in courses:
-        dictionary = {'id': str(elem['_id']), 'name': elem['name'], 'percent': procents_dict[elem['name']]}
+        dictionary = {'id': str(elem['_id']), 'name': elem['name'], 'percent': procents_dict[elem['name']], "hard": elem["hard"], "soft": elem["soft"]}
         result.append(dictionary)
     return result
 
@@ -67,7 +67,7 @@ async def profile(request):
     result['name'] = user_data['name']
     result['surname'] = user_data['surname']
     result['group'] = user_data['group']
-    return web.Response(text=json.dumps(result))
+    return web.Response(text=json.dumps(result, ensure_ascii=False))
 
 @routes.get('/courseinfo')
 async def courseinfo(request):
@@ -76,7 +76,7 @@ async def courseinfo(request):
     course_id = request_data['id']
     course_data = mydb["courses"].find_one({"_id": ObjectId(course_id)})
     course_data['id'] = str(course_data.pop('_id'))
-    return web.Response(text=json.dumps(course_data))
+    return web.Response(text=json.dumps(course_data, ensure_ascii=False))
 
 @routes.get('/courseschoose')
 async def courseschoose(request):
@@ -98,9 +98,27 @@ async def courseschoose(request):
                     temp.pop('semesters')
                     #temp.pop('_id')
                     result[i].append(temp)
-    sorted_list = sorted(user_percents, key=lambda course: course['percent'])
-    print(sorted_list)
-    return web.Response(text=json.dumps(sorted_list))
+    max = -1
+    res = []
+    for elem in user_percents:
+        if elem['percent'] > max:
+            max = elem['percent']
+    for elem in user_percents:
+        if elem['percent'] == max:
+            res.append(elem)
+    colors = {}
+    request_data = dict(request.query)
+    user_id = request_data['id']
+    user_data = mydb["users"].find_one({"_id": ObjectId(user_id)})
+    good_courses = []
+    for elem in course_data:
+        for elem2 in res:
+            if elem['name'] in elem2['hard'] and elem not in good_courses and elem['name'] not in user_data['hard']:
+                good_courses.append(elem)
+    for course in good_courses:
+        course['id'] = str(course.pop('_id'))
+    colors['good'] = good_courses
+    return web.Response(text=json.dumps(colors, ensure_ascii=False))
 
 async def init_mongo(loop):
     url = "mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
