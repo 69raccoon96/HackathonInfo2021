@@ -7,3 +7,4 @@ pymongo
 aiohttp_security
 aiohttp_session
 aiohttp_session_mongo
+dnspython
