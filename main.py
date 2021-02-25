@@ -35,15 +35,10 @@ mycol = mydb["users"]
 async def percents(request):
     #await check_authorized(request)
     result = await get_percents(request)
-    for elem in result:
-        elem['_id'] = str(elem['_id'])
-    print(result)
-
     return web.Response(text=json.dumps(result))
 
 async def get_percents(request):
     request_data = dict(request.query)
-    print(request_data)
     user_id = request_data['id']
     user_info = mycol.find_one({"_id": ObjectId(user_id)})
     user_hard = user_info['hard']
@@ -58,7 +53,7 @@ async def get_percents(request):
         procents_dict[elem['name']] = round((dif + dif2) / (len(course_hard) + len(course_soft)) * 100)
     result = []
     for elem in courses:
-        dictionary = {'_id': elem['_id'], 'name': elem['name'], 'percent': procents_dict[elem['name']]}
+        dictionary = {'id': str(elem['_id']), 'name': elem['name'], 'percent': procents_dict[elem['name']]}
         result.append(dictionary)
     return result
 
@@ -84,6 +79,7 @@ async def courseinfo(request):
     request_data = dict(request.query)
     course_id = request_data['id']
     course_data = mydb["courses"].find_one({"_id": ObjectId(course_id)})
+    course_data['id'] = str(course_data.pop('_id'))
     return web.Response(text=json.dumps(course_data))
 
 @routes.get('/courseschoose')
@@ -106,9 +102,9 @@ async def courseschoose(request):
                     temp.pop('semesters')
                     #temp.pop('_id')
                     result[i].append(temp)
-    sorted(user_percents,key=lambda course: course['percent'])
-    print(user_percents)
-    return web.Response(text=json.dumps(result))
+    sorted_list = sorted(user_percents, key=lambda course: course['percent'])
+    print(sorted_list)
+    return web.Response(text=json.dumps(sorted_list))
 
 async def init_mongo(loop):
     url = "mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
