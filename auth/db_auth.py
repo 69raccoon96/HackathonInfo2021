@@ -16,7 +16,10 @@ class DBAuthorizationPolicy(AbstractAuthorizationPolicy):
         if identity is None:
             return False
         # checks)
-        return True
+        user = await self.user_repo.get_user_by_username(identity)
+        if user is not None and user.username == identity:
+            return user.status == 'admin' or user.status == permission
+        return False
 
 
 async def check_credentials(user_repo, username, password):
