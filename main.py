@@ -118,6 +118,20 @@ async def courseschoose(request):
     for course in good_courses:
         course['id'] = str(course.pop('_id'))
     colors['good'] = good_courses
+    normal_courses = []
+    courses_data = list(mydb["courses"].find({}))
+    bad_courses = []
+    for elem in res:
+        for elem2 in courses_data:
+            if elem['id'] == str(elem2['_id']):
+                bad_courses += elem2['bad']
+    bad_courses = list(set(bad_courses))
+    good_bad_courses = [x['name'] for x in good_courses] + bad_courses
+    for course in course_data:
+        if course['name'] not in good_bad_courses:
+            course['id'] = str(course.pop('_id'))
+            normal_courses.append(course)
+    colors['normal'] = normal_courses
     return web.Response(text=json.dumps(colors, ensure_ascii=False))
 
 async def init_mongo(loop):
