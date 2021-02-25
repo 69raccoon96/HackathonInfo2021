@@ -10,7 +10,7 @@ import motor.motor_asyncio as aiomotor
 from aiohttp_session_mongo import MongoStorage
 from aiohttp import web
 from aiohttp_session import setup, get_session, session_middleware, SimpleCookieStorage
-from aiohttp_security import setup as setup_security, SessionIdentityPolicy
+from aiohttp_security import setup as setup_security, SessionIdentityPolicy, check_authorized
 
 import logging
 
@@ -32,6 +32,7 @@ mycol = mydb["users"]
 
 @routes.get('/percents')
 async def percents(request):
+    #await check_authorized(request)
     request_data = dict(request.query)
     user_id = request_data['id']
     user_info = mycol.find_one({"_id": ObjectId(user_id)})
@@ -51,8 +52,23 @@ async def percents(request):
         result.append(dictionary)
     return web.Response(text=str(result))
 
+@routes.get('/profile')
+async def profile(request):
+    #await check_authorized(request)
+    request_data = dict(request.query)
+    user_id = request_data['id']
+    user_data = mydb["users"].find_one({"_id": ObjectId(user_id)})
+    result = {}
+    result['hard'] = user_data['hard']
+    result['soft'] = user_data['soft']
+    result['name'] = user_data['name']
+    result['surname'] = user_data['surname']
+    result['group'] = user_data['group']
+    return web.Response(text=str(result))
+
 @routes.get('/courseinfo')
 async def courseinfo(request):
+    #await check_authorized(request)
     request_data = dict(request.query)
     course_id = request_data['id']
     course_data = mydb["courses"].find_one({"_id": ObjectId(course_id)})
