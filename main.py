@@ -1,3 +1,5 @@
+import json
+
 import pymongo
 from bson.objectid import ObjectId
 import asyncio
@@ -28,7 +30,16 @@ mycol = mydb["users"]
 @routes.get('/percents')
 async def percents(request):
     #await check_authorized(request)
+    result = await get_percents(request)
+    for elem in result:
+        elem['_id'] = str(elem['_id'])
+    print(result)
+
+    return web.Response(text=json.dumps(result))
+
+async def get_percents(request):
     request_data = dict(request.query)
+    print(request_data)
     user_id = request_data['id']
     user_info = mycol.find_one({"_id": ObjectId(user_id)})
     user_hard = user_info['hard']
@@ -45,12 +56,14 @@ async def percents(request):
     for elem in courses:
         dictionary = {'_id': elem['_id'], 'name': elem['name'], 'percent': procents_dict[elem['name']]}
         result.append(dictionary)
-    return web.Response(text=str(result))
+    return result
+
 
 @routes.get('/profile')
 async def profile(request):
     #await check_authorized(request)
     request_data = dict(request.query)
+
     user_id = request_data['id']
     user_data = mydb["users"].find_one({"_id": ObjectId(user_id)})
     result = {}
@@ -59,7 +72,7 @@ async def profile(request):
     result['name'] = user_data['name']
     result['surname'] = user_data['surname']
     result['group'] = user_data['group']
-    return web.Response(text=str(result))
+    return web.Response(text=json.dumps(result))
 
 @routes.get('/courseinfo')
 async def courseinfo(request):
@@ -67,7 +80,31 @@ async def courseinfo(request):
     request_data = dict(request.query)
     course_id = request_data['id']
     course_data = mydb["courses"].find_one({"_id": ObjectId(course_id)})
-    return web.Response(text=str(course_data))
+    return web.Response(text=json.dumps(course_data))
+
+@routes.get('/courseschoose')
+async def courseschoose(request):
+    user_percents = await get_percents(request)
+    #await check_authorized(request)
+    course_data = list(mydb["subjects"].find({}))
+    result = {}
+    for i in range(1, 9):
+        for course in course_data:
+            if i in course['semesters']:
+                if i in result.keys():
+                    temp = dict(course)
+                    temp.pop('semesters')
+                    #temp.pop('_id')
+                    result[i].append(temp)
+                else:
+                    result[i] = []
+                    temp = dict(course)
+                    temp.pop('semesters')
+                    #temp.pop('_id')
+                    result[i].append(temp)
+    sorted(user_percents,key=lambda course: course['percent'])
+    print(user_percents)
+    return web.Response(text=json.dumps(result))
 
 async def init_mongo(loop):
     url = "mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
