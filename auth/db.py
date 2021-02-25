@@ -41,7 +41,10 @@ class MongoUserRepository(AbstractUserRepository):
 
     async def get_user_by_username(self, username):
         user = await self.__storage.find_one({"username": username})
-        return User(**user)
+        if user is not None:
+            return User(**user)
+        else:
+            return None
 
     async def update_user(self, user_info):
         pass

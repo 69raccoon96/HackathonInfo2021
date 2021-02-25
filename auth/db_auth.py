@@ -7,7 +7,7 @@ class DBAuthorizationPolicy(AbstractAuthorizationPolicy):
 
     async def authorized_userid(self, identity):
         user = await self.user_repo.get_user_by_username(identity)
-        if user.username == identity:
+        if user is not None and user.username == identity:
             return identity
         else:
             return None
@@ -21,4 +21,4 @@ class DBAuthorizationPolicy(AbstractAuthorizationPolicy):
 
 async def check_credentials(user_repo, username, password):
     user = await user_repo.get_user_by_username(username)
-    return user.password == password
+    return user is not None and user.password == password

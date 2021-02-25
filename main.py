@@ -115,7 +115,6 @@ async def make_app():
     app.add_routes(routes)
     for route in list(app.router.routes()):
         if not isinstance(route.resource, StaticResource):
-            print(route)
             cors.add(route)
 
     return app
