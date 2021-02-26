@@ -97,6 +97,18 @@ async def courseinfo(request):
     course_data['id'] = str(course_data.pop('_id'))
     return web.Response(text=json.dumps(course_data, ensure_ascii=False))
 
+@routes.get('/addsubject')
+async def addsubject(request):
+    await check_authorized(request)
+    request_data = dict(request.query)
+    subject_id = request_data['idSubject']
+    user_id = request_data['idUser']
+    subject_data = mydb["subjects"].find_one({"_id": ObjectId(subject_id)})
+    name = subject_data['name']
+    t = subject_data['type']
+    mydb["users"].update_one({'_id': ObjectId(user_id)}, {'$push': {t: name}}, upsert=True)
+    return web.Response(text='completed')
+
 def clean_up(courses):
     result = []
     for cuorse in courses:
@@ -166,6 +178,7 @@ async def courseschoose(request):
     #print(not_learned_coursed)
     print(colors)
     return web.Response(text=json.dumps(colors, ensure_ascii=False))
+
 
 
 
