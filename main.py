@@ -213,7 +213,7 @@ async def make_app():
     loop = asyncio.get_event_loop()
     db = await setup_mongo(loop)
     session_collection = db['sessions']
-    storage = MyMongoStorage(session_collection, samesite='none', max_age=max_age)
+    storage = MyMongoStorage(session_collection, samesite='none', secure=True, max_age=max_age)
     app = web.Application(middlewares=[session_middleware(storage), cookie_header_middleware])
     cors = aiohttp_cors.setup(app, defaults={
         "*": aiohttp_cors.ResourceOptions(
