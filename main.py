@@ -33,7 +33,7 @@ mycol = mydb["users"]
 
 @routes.get('/percents')
 async def percents(request):
-    #await check_authorized(request)
+    await check_authorized(request)
     result = await get_percents(request)
     return web.Response(text=json.dumps(result, ensure_ascii=False))
 
@@ -60,7 +60,7 @@ async def get_percents(request):
 
 @routes.get('/profile')
 async def profile(request):
-    #await check_authorized(request)
+    await check_authorized(request)
     request_data = dict(request.query)
     course_data = list(mydb["subjects"].find({}))
     user_id = request_data['id']
@@ -90,7 +90,7 @@ async def profile(request):
 
 @routes.get('/courseinfo')
 async def courseinfo(request):
-    #await check_authorized(request)
+    await check_authorized(request)
     request_data = dict(request.query)
     course_id = request_data['id']
     course_data = mydb["courses"].find_one({"_id": ObjectId(course_id)})
@@ -115,7 +115,7 @@ def clean_up(courses):
 @routes.get('/courseschoose')
 async def courseschoose(request):
     user_percents = await get_percents(request)
-    #await check_authorized(request)
+    await check_authorized(request)
     course_data = list(mydb["subjects"].find({}))
     max = -1
     available_directions = []
