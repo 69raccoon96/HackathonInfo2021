@@ -174,7 +174,7 @@ async def make_app():
     loop = asyncio.get_event_loop()
     db = await setup_mongo(loop)
     session_collection = db['sessions']
-    middleware = session_middleware(MongoStorage(session_collection, secure=True, max_age=max_age))
+    middleware = session_middleware(MongoStorage(session_collection, max_age=max_age))
 
     app = web.Application(middlewares=[middleware])
     cors = aiohttp_cors.setup(app, defaults={
