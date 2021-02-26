@@ -35,7 +35,9 @@ mycol = mydb["users"]
 async def percents(request):
     await check_authorized(request)
     result = await get_percents(request)
-    return web.Response(text=json.dumps(result, ensure_ascii=False))
+    resp = web.Response(text=json.dumps(result, ensure_ascii=False))
+    resp.set_cookie(samesite='none')
+    return resp
 
 async def get_percents(request):
     request_data = dict(request.query)
@@ -85,8 +87,9 @@ async def profile(request):
     result['name'] = user_data['name']
     result['surname'] = user_data['surname']
     result['group'] = user_data['group']
-
-    return web.Response(text=json.dumps(result, ensure_ascii=False))
+    resp = web.Response(text=json.dumps(result, ensure_ascii=False))
+    resp.set_cookie(samesite='none')
+    return resp
 
 @routes.get('/courseinfo')
 async def courseinfo(request):
@@ -95,7 +98,9 @@ async def courseinfo(request):
     course_id = request_data['id']
     course_data = mydb["courses"].find_one({"_id": ObjectId(course_id)})
     course_data['id'] = str(course_data.pop('_id'))
-    return web.Response(text=json.dumps(course_data, ensure_ascii=False))
+    resp = web.Response(text=json.dumps(course_data, ensure_ascii=False))
+    resp.set_cookie(samesite='none')
+    return resp
 
 @routes.get('/addsubject')
 async def addsubject(request):
@@ -177,7 +182,9 @@ async def courseschoose(request):
     #print([x['name'] for x in normal_courses])
     #print(not_learned_coursed)
     print(colors)
-    return web.Response(text=json.dumps(colors, ensure_ascii=False))
+    resp = web.Response(text=json.dumps(colors, ensure_ascii=False))
+    resp.set_cookie(samesite='none')
+    return resp
 
 
 
@@ -195,7 +202,9 @@ async def setup_mongo(loop):
 
 @routes.get('/')
 async def hello(request):
-    return web.Response(text="true")
+    resp = web.Response(text="true")
+    resp.set_cookie(samesite='none')
+    return resp
 
 async def make_app():
     max_age = 3600 * 24 * 365
