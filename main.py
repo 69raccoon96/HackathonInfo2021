@@ -34,7 +34,7 @@ mycol = mydb["users"]
 
 @routes.get('/percents')
 async def percents(request):
-    #await check_authorized(request)
+    await check_authorized(request)
     result = await get_percents(request)
     return web.Response(text=json.dumps(result, ensure_ascii=False))
 
@@ -61,27 +61,54 @@ async def get_percents(request):
 
 @routes.get('/profile')
 async def profile(request):
-    #await check_authorized(request)
+    await check_authorized(request)
     request_data = dict(request.query)
-
+    course_data = list(mydb["subjects"].find({}))
     user_id = request_data['id']
     user_data = mydb["users"].find_one({"_id": ObjectId(user_id)})
+    soft = []
+    hard = []
+    for element in user_data['soft']:
+        for course in course_data:
+            if element == course['name']:
+                a = dict(course)
+                a['id'] = str(a.pop('_id'))
+                soft.append(a)
+    for element in user_data['hard']:
+        for course in course_data:
+            if element == course['name']:
+                a = dict(course)
+                a['id'] = str(a.pop('_id'))
+                hard.append(a)
     result = {}
-    result['hard'] = user_data['hard']
-    result['soft'] = user_data['soft']
+    result['hard'] = hard
+    result['soft'] = soft
     result['name'] = user_data['name']
     result['surname'] = user_data['surname']
     result['group'] = user_data['group']
+
     return web.Response(text=json.dumps(result, ensure_ascii=False))
 
 @routes.get('/courseinfo')
 async def courseinfo(request):
-    #await check_authorized(request)
+    await check_authorized(request)
     request_data = dict(request.query)
     course_id = request_data['id']
     course_data = mydb["courses"].find_one({"_id": ObjectId(course_id)})
     course_data['id'] = str(course_data.pop('_id'))
     return web.Response(text=json.dumps(course_data, ensure_ascii=False))
+
+@routes.get('/addsubject')
+async def addsubject(request):
+    await check_authorized(request)
+    request_data = dict(request.query)
+    subject_id = request_data['idSubject']
+    user_id = request_data['idUser']
+    subject_data = mydb["subjects"].find_one({"_id": ObjectId(subject_id)})
+    name = subject_data['name']
+    t = subject_data['type']
+    mydb["users"].update_one({'_id': ObjectId(user_id)}, {'$push': {t: name}}, upsert=True)
+    return web.Response(text='completed')
 
 def clean_up(courses):
     result = []
@@ -101,7 +128,7 @@ def clean_up(courses):
 @routes.get('/courseschoose')
 async def courseschoose(request):
     user_percents = await get_percents(request)
-    #await check_authorized(request)
+    await check_authorized(request)
     course_data = list(mydb["subjects"].find({}))
     max = -1
     available_directions = []
@@ -129,7 +156,7 @@ async def courseschoose(request):
     for subject in course_data:
         if subject['name'] not in good_courses_names and subject['name'] not in bad_courses:
             subject['id'] = str(subject.pop('_id'))
-            if user_semester < sorted(subject['semesters'])[-1]:
+            if user_semester <= sorted(subject['semesters'])[-1]:
                 normal_courses.append(subject)
     not_learned_coursed = []
     for course in good_courses_names:
@@ -140,17 +167,19 @@ async def courseschoose(request):
     for gc in not_learned_coursed:
         for course in course_data:
             if gc == course['name']:
-                if user_semester < sorted(course['semesters'])[-1]:
+                if user_semester <= sorted(course['semesters'])[-1]:
                     course['id'] = str(course.pop('_id'))
                     good.append(course)
     colors['good'] = good
     colors['normal'] = normal_courses
+    colors['semester'] = user_semester
     #print(bad_courses)
     #print(good_courses_names)
     #print([x['name'] for x in normal_courses])
     #print(not_learned_coursed)
     print(colors)
     return web.Response(text=json.dumps(colors, ensure_ascii=False))
+
 
 
 

@@ -34,7 +34,6 @@ async def make_app():
     db = await setup_mongo(loop)
     session_collection = db['sessions']
     middleware = session_middleware(MongoStorage(session_collection, max_age=max_age))
-
     app = web.Application(middlewares=[middleware])
 
     async def close_mongo():
