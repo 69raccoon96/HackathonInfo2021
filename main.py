@@ -155,7 +155,7 @@ async def courseschoose(request):
     for subject in course_data:
         if subject['name'] not in good_courses_names and subject['name'] not in bad_courses:
             subject['id'] = str(subject.pop('_id'))
-            if user_semester < sorted(subject['semesters'])[-1]:
+            if user_semester <= sorted(subject['semesters'])[-1]:
                 normal_courses.append(subject)
     not_learned_coursed = []
     for course in good_courses_names:
@@ -166,7 +166,7 @@ async def courseschoose(request):
     for gc in not_learned_coursed:
         for course in course_data:
             if gc == course['name']:
-                if user_semester < sorted(course['semesters'])[-1]:
+                if user_semester <= sorted(course['semesters'])[-1]:
                     course['id'] = str(course.pop('_id'))
                     good.append(course)
     colors['good'] = good
