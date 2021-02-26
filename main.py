@@ -1,8 +1,11 @@
 import os
 import json
+import types
+
 import aiohttp_cors
 
 import pymongo
+from aiohttp.web_middlewares import middleware
 from aiohttp.web_urldispatcher import StaticResource
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 from bson.objectid import ObjectId
@@ -20,7 +23,7 @@ from auth.db import MongoUserRepository
 from auth.db_auth import DBAuthorizationPolicy
 from auth.views import Auth
 #import dnspython
-
+from infrastructure.session_storage.mymongostorage import MyMongoStorage
 
 routes = web.RouteTableDef()
 client = pymongo.MongoClient("mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
@@ -30,6 +33,12 @@ mycol = mydb["users"]
 #mydict = { "name": "John", "address": "Highway 37" }
 #myCursor = mycol.find({"name":"Ivan"})
 #x = mycol.insert_one(mydict)
+
+
+@middleware
+async def cookie_header_middleware(request, handler):
+    resp = await handler(request)
+    return resp
 
 
 @routes.get('/percents')
@@ -198,14 +207,14 @@ async def setup_mongo(loop):
 async def hello(request):
     return web.Response(text="true")
 
+
 async def make_app():
     max_age = 3600 * 24 * 365
     loop = asyncio.get_event_loop()
     db = await setup_mongo(loop)
     session_collection = db['sessions']
-    middleware = session_middleware(MongoStorage(session_collection, max_age=max_age))
-
-    app = web.Application(middlewares=[middleware])
+    storage = MyMongoStorage(session_collection, samesite='none', max_age=max_age)
+    app = web.Application(middlewares=[session_middleware(storage), cookie_header_middleware])
     cors = aiohttp_cors.setup(app, defaults={
         "*": aiohttp_cors.ResourceOptions(
             allow_credentials=True,

@@ -1,5 +1,5 @@
 import json
-
+import types
 from aiohttp import web
 
 from aiohttp_security import (
