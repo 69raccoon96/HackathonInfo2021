@@ -40,6 +40,23 @@ async def cookie_header_middleware(request, handler):
     resp = await handler(request)
     return resp
 
+@routes.get('/allcourses')
+async def allcourses(request):
+    all_courses = list(mydb['courses'].find({}))
+    all_subjects = list(mydb['subjects'].find({}))
+    res = {}
+    for course in all_courses:
+        needed_subjects = course['hard'] + course['soft']
+        for sub in needed_subjects:
+            for one_sub in all_subjects:
+                print(sub)
+                print(one_sub)
+                if sub == one_sub['name']:
+                    if course['name'] in res.keys():
+                        res[course['name']].append([sub, one_sub['semesters']])
+                    else:
+                        res[course['name']] = [[sub, one_sub['semesters']]]
+    return web.Response(text=json.dumps(res, ensure_ascii=False))
 
 @routes.get('/percents')
 async def percents(request):
@@ -66,7 +83,6 @@ async def get_percents(request):
         dictionary = {'id': str(elem['_id']), 'name': elem['name'], 'percent': procents_dict[elem['name']], "hard": elem["hard"], "soft": elem["soft"]}
         result.append(dictionary)
     return result
-
 
 @routes.get('/profile')
 async def profile(request):
@@ -133,7 +149,6 @@ def clean_up(courses):
             result2.append(elem)
     return result2
 
-
 @routes.get('/courseschoose')
 async def courseschoose(request):
     user_percents = await get_percents(request)
@@ -188,9 +203,6 @@ async def courseschoose(request):
     #print(not_learned_coursed)
     print(colors)
     return web.Response(text=json.dumps(colors, ensure_ascii=False))
-
-
-
 
 async def init_mongo(loop):
     url = "mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
