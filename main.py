@@ -19,6 +19,7 @@ from aiohttp_security import setup as setup_security, SessionIdentityPolicy, che
 
 import logging
 
+from admin.views import get_admin_routes
 from auth.db import MongoUserRepository
 from auth.db_auth import DBAuthorizationPolicy
 from auth.views import Auth
@@ -243,6 +244,7 @@ async def make_app():
     auth_handlers = Auth()
     auth_handlers.configure(app)
     app.add_routes(routes)
+    app.add_routes(get_admin_routes())
     for route in list(app.router.routes()):
         if not isinstance(route.resource, StaticResource):
             cors.add(route)
