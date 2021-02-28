@@ -19,6 +19,8 @@ from aiohttp_security import setup as setup_security, SessionIdentityPolicy, che
 
 import logging
 
+from admin.repos import MongoAdminUserRepository, MongoAdminCourseRepository, MongoAdminSubjectRepository
+from admin.views import get_admin_routes
 from auth.db import MongoUserRepository
 from auth.db_auth import DBAuthorizationPolicy
 from auth.views import Auth
@@ -33,12 +35,6 @@ mycol = mydb["users"]
 #mydict = { "name": "John", "address": "Highway 37" }
 #myCursor = mycol.find({"name":"Ivan"})
 #x = mycol.insert_one(mydict)
-
-
-@middleware
-async def cookie_header_middleware(request, handler):
-    resp = await handler(request)
-    return resp
 
 
 @routes.get('/percents')
@@ -214,7 +210,7 @@ async def make_app():
     db = await setup_mongo(loop)
     session_collection = db['sessions']
     storage = MyMongoStorage(session_collection, samesite='none', secure=True, max_age=max_age)
-    app = web.Application(middlewares=[session_middleware(storage), cookie_header_middleware])
+    app = web.Application(middlewares=[session_middleware(storage)])
     cors = aiohttp_cors.setup(app, defaults={
         "*": aiohttp_cors.ResourceOptions(
             allow_credentials=True,
@@ -224,13 +220,18 @@ async def make_app():
 
     async def close_mongo():
         db.client.close()
+
     app.on_cleanup.append(close_mongo)
     app.user_repo = MongoUserRepository(db)
+    app.admin_user_repo = MongoAdminUserRepository(db)
+    app.admin_course_repo = MongoAdminCourseRepository(db)
+    app.admin_subject_repo = MongoAdminSubjectRepository(db)
     policy = SessionIdentityPolicy()
     setup_security(app, policy, DBAuthorizationPolicy(app.user_repo))
     auth_handlers = Auth()
     auth_handlers.configure(app)
     app.add_routes(routes)
+    app.add_routes(get_admin_routes())
     for route in list(app.router.routes()):
         if not isinstance(route.resource, StaticResource):
             cors.add(route)
