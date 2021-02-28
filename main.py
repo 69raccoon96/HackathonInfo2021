@@ -19,8 +19,6 @@ from aiohttp_security import setup as setup_security, SessionIdentityPolicy, che
 
 import logging
 
-from admin.repos import MongoAdminUserRepository, MongoAdminCourseRepository, MongoAdminSubjectRepository
-from admin.views import get_admin_routes
 from auth.db import MongoUserRepository
 from auth.db_auth import DBAuthorizationPolicy
 from auth.views import Auth
@@ -36,6 +34,29 @@ mycol = mydb["users"]
 #myCursor = mycol.find({"name":"Ivan"})
 #x = mycol.insert_one(mydict)
 
+
+@middleware
+async def cookie_header_middleware(request, handler):
+    resp = await handler(request)
+    return resp
+
+@routes.get('/allcourses')
+async def allcourses(request):
+    all_courses = list(mydb['courses'].find({}))
+    all_subjects = list(mydb['subjects'].find({}))
+    res = {}
+    for course in all_courses:
+        needed_subjects = course['hard'] + course['soft']
+        for sub in needed_subjects:
+            for one_sub in all_subjects:
+                print(sub)
+                print(one_sub)
+                if sub == one_sub['name']:
+                    if course['name'] in res.keys():
+                        res[course['name']].append([sub, one_sub['semesters']])
+                    else:
+                        res[course['name']] = [[sub, one_sub['semesters']]]
+    return web.Response(text=json.dumps(res, ensure_ascii=False))
 
 @routes.get('/percents')
 async def percents(request):
@@ -62,7 +83,6 @@ async def get_percents(request):
         dictionary = {'id': str(elem['_id']), 'name': elem['name'], 'percent': procents_dict[elem['name']], "hard": elem["hard"], "soft": elem["soft"]}
         result.append(dictionary)
     return result
-
 
 @routes.get('/profile')
 async def profile(request):
@@ -129,7 +149,6 @@ def clean_up(courses):
             result2.append(elem)
     return result2
 
-
 @routes.get('/courseschoose')
 async def courseschoose(request):
     user_percents = await get_percents(request)
@@ -185,9 +204,6 @@ async def courseschoose(request):
     print(colors)
     return web.Response(text=json.dumps(colors, ensure_ascii=False))
 
-
-
-
 async def init_mongo(loop):
     url = "mongodb+srv://admin:RTF4empion@cluster0.p8umr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
     conn = aiomotor.AsyncIOMotorClient(
@@ -210,7 +226,7 @@ async def make_app():
     db = await setup_mongo(loop)
     session_collection = db['sessions']
     storage = MyMongoStorage(session_collection, samesite='none', secure=True, max_age=max_age)
-    app = web.Application(middlewares=[session_middleware(storage)])
+    app = web.Application(middlewares=[session_middleware(storage), cookie_header_middleware])
     cors = aiohttp_cors.setup(app, defaults={
         "*": aiohttp_cors.ResourceOptions(
             allow_credentials=True,
@@ -220,18 +236,13 @@ async def make_app():
 
     async def close_mongo():
         db.client.close()
-
     app.on_cleanup.append(close_mongo)
     app.user_repo = MongoUserRepository(db)
-    app.admin_user_repo = MongoAdminUserRepository(db)
-    app.admin_course_repo = MongoAdminCourseRepository(db)
-    app.admin_subject_repo = MongoAdminSubjectRepository(db)
     policy = SessionIdentityPolicy()
     setup_security(app, policy, DBAuthorizationPolicy(app.user_repo))
     auth_handlers = Auth()
     auth_handlers.configure(app)
     app.add_routes(routes)
-    app.add_routes(get_admin_routes())
     for route in list(app.router.routes()):
         if not isinstance(route.resource, StaticResource):
             cors.add(route)
